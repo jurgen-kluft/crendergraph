@@ -24,9 +24,9 @@ namespace ncore
     public:
         RenderGraph(Renderer* pRenderer);
 
-        template <typename Data, typename Setup, typename Exec> RenderGraphPass<Data>& AddPass(const nstring::str_t const* name, RenderPassType type, const Setup& setup, const Exec& execute);
+        template <typename Data, typename Setup, typename Exec> RenderGraphPass<Data>& AddPass(cpstr_t name, RenderPassType type, const Setup& setup, const Exec& execute);
 
-        void BeginEvent(const nstring::str_t const* name);
+        void BeginEvent(cpstr_t name);
         void EndEvent();
 
         void Clear();
@@ -42,14 +42,13 @@ namespace ncore
         RGBuffer*  GetBuffer(const RGHandle& handle);
 
         const DirectedAcyclicGraph& GetDAG() const { return m_graph; }
-        nstring::str_t const*       Export(nstring::storage_t* strs);
+        cpstr_t       Export(nstring::storage_t* strs);
 
     private:
         template <typename T, typename... ArgsT> T* Allocate(ArgsT&&... arguments);
-
         template <typename T, typename... ArgsT> T* AllocatePOD(ArgsT&&... arguments);
 
-        template <typename Resource> RGHandle Create(const typename Resource::Desc& desc, const nstring::str_t const* name);
+        template <typename Resource> RGHandle Create(const typename Resource::Desc& desc, cpstr_t name);
 
         RGHandle Read(RenderGraphPassBase* pass, const RGHandle& input, GfxAccessFlags usage, u32 subresource);
         RGHandle Write(RenderGraphPassBase* pass, const RGHandle& input, GfxAccessFlags usage, u32 subresource);
@@ -59,11 +58,11 @@ namespace ncore
         RGHandle ReadDepth(RenderGraphPassBase* pass, const RGHandle& input, u32 subresource);
 
     private:
-        LinearAllocator              m_allocator{512 * 1024};
+        linear_alloc_t*              m_allocator;
         RenderGraphResourceAllocator m_resourceAllocator;
         DirectedAcyclicGraph         m_graph;
 
-        eastl::vector<eastl::string> m_eventNames;
+        eastl::vector<cpstr_t> m_eventNames;
 
         eastl::unique_ptr<IGfxFence> m_pComputeQueueFence;
         u64                     m_nComputeQueueFenceValue = 0;
@@ -93,7 +92,7 @@ namespace ncore
     class RenderGraphEvent
     {
     public:
-        RenderGraphEvent(RenderGraph* graph, const char* name)
+        RenderGraphEvent(RenderGraph* graph, cpstr_t name)
             : m_pRenderGraph(graph)
         {
             m_pRenderGraph->BeginEvent(name);

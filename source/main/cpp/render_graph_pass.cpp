@@ -179,7 +179,7 @@ namespace ncore
             {
                 if (!context.preGraphicsQueuePasses.empty())
                 {
-                    DAGNode* graphicsPassToWaitID = *eastl::max_element(context.preGraphicsQueuePasses.begin(), context.preGraphicsQueuePasses.end());
+                    DAGNode* graphicsPassToWaitID = *math::max_element(context.preGraphicsQueuePasses.begin(), context.preGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* graphicsPassToWait = (RenderGraphPassBase*)graph.GetNode(graphicsPassToWaitID);
                     if (graphicsPassToWait->m_signalValue == -1)
@@ -199,7 +199,7 @@ namespace ncore
 
                 if (!context.postGraphicsQueuePasses.empty())
                 {
-                    DAGNode* graphicsPassToSignalID = *eastl::min_element(context.postGraphicsQueuePasses.begin(), context.postGraphicsQueuePasses.end());
+                    DAGNode* graphicsPassToSignalID = *math::min_element(context.postGraphicsQueuePasses.begin(), context.postGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* computePass = (RenderGraphPassBase*)graph.GetNode(context.computeQueuePasses.back());
                     if (computePass->m_signalValue == -1)

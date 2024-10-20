@@ -130,7 +130,7 @@ namespace ncore
                 initial_state = GfxAccessMaskUAV;
             }
 
-            RE_ASSERT(aliasedTexture.resource != nullptr);
+            ASSERT(aliasedTexture.resource != nullptr);
             return (IGfxTexture*)aliasedTexture.resource;
         }
 
@@ -174,7 +174,7 @@ namespace ncore
 
             initial_state = GfxAccessDiscard;
 
-            RE_ASSERT(aliasedBuffer.resource != nullptr);
+            ASSERT(aliasedBuffer.resource != nullptr);
             return (IGfxBuffer*)aliasedBuffer.resource;
         }
 
@@ -219,7 +219,7 @@ namespace ncore
                 }
             }
 
-            RE_ASSERT(false);
+            ASSERT(false);
         }
     }
 
@@ -259,7 +259,7 @@ namespace ncore
             return prev_resource;
         }
 
-        RE_ASSERT(false);
+        ASSERT(false);
         return nullptr;
     }
 
