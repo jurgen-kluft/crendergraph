@@ -6,30 +6,31 @@
 
 namespace ncore
 {
-    class RenderGraphEdge : public DAGEdge
+    // =====> DAGEdge
+    class RenderGraphEdge
     {
     public:
-        RenderGraphEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, GfxAccessFlags usage, u32 subresource)
-            : DAGEdge(graph, from, to)
+        RenderGraphEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, ngfx::GfxAccessFlags usage, u32 subresource)
+        //: DAGEdge(graph, from, to)
         {
             m_usage       = usage;
             m_subresource = subresource;
         }
 
-        GfxAccessFlags GetUsage() const { return m_usage; }
-        u32            GetSubresource() const { return m_subresource; }
+        ngfx::GfxAccessFlags GetUsage() const { return m_usage; }
+        u32                  GetSubresource() const { return m_subresource; }
 
     private:
-        GfxAccessFlags m_usage;
-        u32            m_subresource;
+        ngfx::GfxAccessFlags m_usage;
+        u32                  m_subresource;
     };
 
-    class RenderGraphResourceNode : public DAGNode
+    // ====> DAGNode
+    class RenderGraphResourceNode
     {
     public:
         RenderGraphResourceNode(DirectedAcyclicGraph& graph, RenderGraphResource* resource, u32 version)
-            : DAGNode(graph)
-            , m_graph(graph)
+            : m_graph(graph)
         {
             m_pResource = resource;
             m_version   = version;
@@ -38,25 +39,25 @@ namespace ncore
         RenderGraphResource* GetResource() const { return m_pResource; }
         u32                  GetVersion() const { return m_version; }
 
-        virtual eastl::string GetGraphvizName() const override
-        {
-            eastl::string s = m_pResource->GetName();
-            s.append("\nversion:");
-            s.append(eastl::to_string(m_version));
-            if (m_version > 0)
-            {
-                eastl::vector<DAGEdge*> incoming_edges;
-                m_graph.GetIncomingEdges(this, incoming_edges);
-                RE_ASSERT(incoming_edges.size() == 1);
-                u32 subresource = ((RenderGraphEdge*)incoming_edges[0])->GetSubresource();
-                s.append("\nsubresource:");
-                s.append(eastl::to_string(subresource));
-            }
-            return s;
-        }
+        // virtual cpstr_t GetGraphvizName() const
+        // {
+        //     // cpstr_t s = m_pResource->GetName();
+        //     // s.append("\nversion:");
+        //     // s.append(eastl::to_string(m_version));
+        //     // if (m_version > 0)
+        //     // {
+        //     //     vector_t<DAGEdge*> incoming_edges;
+        //     //     m_graph.GetIncomingEdges(this, incoming_edges);
+        //     //     RE_ASSERT(incoming_edges.size() == 1);
+        //     //     u32 subresource = ((RenderGraphEdge*)incoming_edges[0])->GetSubresource();
+        //     //     s.append("\nsubresource:");
+        //     //     s.append(eastl::to_string(subresource));
+        //     // }
+        //     return nullptr;
+        // }
 
-        virtual const char* GetGraphvizColor() const override { return !IsCulled() ? "lightskyblue1" : "lightskyblue4"; }
-        virtual const char* GetGraphvizShape() const override { return "ellipse"; }
+        // virtual const char* GetGraphvizColor() const override { return !IsCulled() ? "lightskyblue1" : "lightskyblue4"; }
+        // virtual const char* GetGraphvizShape() const override { return "ellipse"; }
 
     private:
         RenderGraphResource* m_pResource;
@@ -68,7 +69,7 @@ namespace ncore
     class RenderGraphEdgeColorAttchment : public RenderGraphEdge
     {
     public:
-        RenderGraphEdgeColorAttchment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, GfxAccessFlags usage, u32 subresource, u32 color_index, GfxRenderPassLoadOp load_op, const float4& clear_color)
+        RenderGraphEdgeColorAttchment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, ngfx::GfxAccessFlags usage, u32 subresource, u32 color_index, ngfx::GfxRenderPass::LoadOp load_op, const float4& clear_color)
             : RenderGraphEdge(graph, from, to, usage, subresource)
         {
             m_colorIndex = color_index;
@@ -79,41 +80,42 @@ namespace ncore
             m_clearColor[2] = clear_color[2];
             m_clearColor[3] = clear_color[3];
         }
-        u32                 GetColorIndex() const { return m_colorIndex; }
-        GfxRenderPassLoadOp GetLoadOp() const { return m_loadOp; }
-        const float*        GetClearColor() const { return m_clearColor; }
+        u32                         GetColorIndex() const { return m_colorIndex; }
+        ngfx::GfxRenderPass::LoadOp GetLoadOp() const { return m_loadOp; }
+        const float*                GetClearColor() const { return m_clearColor; }
 
     private:
-        u32                 m_colorIndex;
-        GfxRenderPassLoadOp m_loadOp;
-        float               m_clearColor[4] = {};
+        u32                         m_colorIndex;
+        ngfx::GfxRenderPass::LoadOp m_loadOp;
+        float                       m_clearColor[4] = {};
     };
 
     class RenderGraphEdgeDepthAttchment : public RenderGraphEdge
     {
     public:
-        RenderGraphEdgeDepthAttchment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, GfxAccessFlags usage, u32 subresource, GfxRenderPassLoadOp depth_load_op, GfxRenderPassLoadOp stencil_load_op, float clear_depth, u32 clear_stencil)
+        RenderGraphEdgeDepthAttchment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, ngfx::GfxAccessFlags usage, u32 subresource, ngfx::GfxRenderPass::LoadOp depth_load_op, ngfx::GfxRenderPass::LoadOp stencil_load_op, float clear_depth,
+                                      u32 clear_stencil)
             : RenderGraphEdge(graph, from, to, usage, subresource)
         {
             m_depthLoadOp   = depth_load_op;
             m_stencilLoadOp = stencil_load_op;
             m_clearDepth    = clear_depth;
             m_clearStencil  = clear_stencil;
-            m_bReadOnly     = (usage & GfxAccessDSVReadOnly) ? true : false;
+            m_bReadOnly     = (usage & ngfx::GfxAccess::DSVReadOnly) ? true : false;
         }
 
-        GfxRenderPassLoadOp GetDepthLoadOp() const { return m_depthLoadOp; };
-        GfxRenderPassLoadOp GetStencilLoadOp() const { return m_stencilLoadOp; };
-        float               GetClearDepth() const { return m_clearDepth; }
-        u32                 GetClearStencil() const { return m_clearStencil; };
-        bool                IsReadOnly() const { return m_bReadOnly; }
+        ngfx::GfxRenderPass::LoadOp GetDepthLoadOp() const { return m_depthLoadOp; };
+        ngfx::GfxRenderPass::LoadOp GetStencilLoadOp() const { return m_stencilLoadOp; };
+        float                       GetClearDepth() const { return m_clearDepth; }
+        u32                         GetClearStencil() const { return m_clearStencil; };
+        bool                        IsReadOnly() const { return m_bReadOnly; }
 
     private:
-        GfxRenderPassLoadOp m_depthLoadOp;
-        GfxRenderPassLoadOp m_stencilLoadOp;
-        float               m_clearDepth;
-        u32                 m_clearStencil;
-        bool                m_bReadOnly;
+        ngfx::GfxRenderPass::LoadOp m_depthLoadOp;
+        ngfx::GfxRenderPass::LoadOp m_stencilLoadOp;
+        float                       m_clearDepth;
+        u32                         m_clearStencil;
+        bool                        m_bReadOnly;
     };
 
     template <typename T> void ClassFinalizer(void* p) { ((T*)p)->~T(); }
@@ -139,7 +141,7 @@ namespace ncore
         return p;
     }
 
-    template <typename Data, typename Setup, typename Exec> inline RenderGraphPass<Data>& RenderGraph::AddPass(const eastl::string& name, RenderPassType type, const Setup& setup, const Exec& execute)
+    template <typename Data, typename Setup, typename Exec> inline RenderGraphPass<Data>& RenderGraph::AddPass(cpstr_t name, RenderPassType type, const Setup& setup, const Exec& execute)
     {
         auto pass = Allocate<RenderGraphPass<Data>>(name, type, m_graph, execute);
 
@@ -157,7 +159,7 @@ namespace ncore
         return *pass;
     }
 
-    template <typename Resource> inline RGHandle RenderGraph::Create(const typename Resource::Desc& desc, const eastl::string& name)
+    template <typename Resource> inline RGHandle RenderGraph::Create(const typename Resource::Desc& desc, cpstr_t name)
     {
         auto resource = Allocate<Resource>(m_resourceAllocator, name, desc);
         auto node     = AllocatePOD<RenderGraphResourceNode>(m_graph, resource, 0);

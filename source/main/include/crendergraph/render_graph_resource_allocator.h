@@ -6,6 +6,7 @@
 #endif
 
 #include "callocator/c_allocator_string.h"
+#include "cgfx/gfx_defines.h"
 
 namespace ncore
 {
@@ -15,12 +16,6 @@ namespace ncore
     class IGfxBuffer;
     class IGfxDescriptor;
     class IGfxHeap;
-
-    struct GfxShaderResourceViewDesc;
-    struct GfxUnorderedAccessViewDesc;
-    struct GfxAccessFlags;
-    struct GfxTextureDesc;
-    struct GfxBufferDesc;
 
     class RenderGraphResourceAllocator
     {
@@ -50,16 +45,16 @@ namespace ncore
 
         struct AliasedResource
         {
-            IGfxResource*  resource;
-            LifetimeRange  lifetime;
-            u64            lastUsedFrame = 0;
-            GfxAccessFlags lastUsedState = GfxAccessDiscard;
+            IGfxResource*          resource;
+            LifetimeRange          lifetime;
+            u64                    lastUsedFrame = 0;
+            ngfx::GfxAccess::Flags lastUsedState = ngfx::GfxAccess::Discard;
         };
 
         struct Heap
         {
             IGfxHeap* heap;
-            // eastl::vector<AliasedResource> resources;
+            // vector_t<AliasedResource> resources;
             s32              resources_size;
             AliasedResource* resources;
 
@@ -90,16 +85,16 @@ namespace ncore
 
         struct SRVDescriptor
         {
-            IGfxResource*             resource;
-            IGfxDescriptor*           descriptor;
-            GfxShaderResourceViewDesc desc;
+            IGfxResource*                   resource;
+            IGfxDescriptor*                 descriptor;
+            ngfx::GfxShaderResourceViewDesc desc;
         };
 
         struct UAVDescriptor
         {
-            IGfxResource*              resource;
-            IGfxDescriptor*            descriptor;
-            GfxUnorderedAccessViewDesc desc;
+            IGfxResource*                    resource;
+            IGfxDescriptor*                  descriptor;
+            ngfx::GfxUnorderedAccessViewDesc desc;
         };
 
     public:
@@ -108,17 +103,17 @@ namespace ncore
 
         void Reset();
 
-        IGfxTexture* AllocateNonOverlappingTexture(const GfxTextureDesc& desc, const nstring::str_t* name, GfxAccessFlags& initial_state);
-        void         FreeNonOverlappingTexture(IGfxTexture* texture, GfxAccessFlags state);
+        IGfxTexture* AllocateNonOverlappingTexture(const ngfx::GfxTextureDesc& desc, const nstring::str_t* name, ngfx::GfxAccess::Flags& initial_state);
+        void         FreeNonOverlappingTexture(IGfxTexture* texture, ngfx::GfxAccess::Flags state);
 
-        IGfxTexture* AllocateTexture(u32 firstPass, u32 lastPass, GfxAccessFlags lastState, const GfxTextureDesc& desc, const nstring::str_t* name, GfxAccessFlags& initial_state);
-        IGfxBuffer*  AllocateBuffer(u32 firstPass, u32 lastPass, GfxAccessFlags lastState, const GfxBufferDesc& desc, const nstring::str_t* name, GfxAccessFlags& initial_state);
-        void         Free(IGfxResource* resource, GfxAccessFlags state, bool set_state);
+        IGfxTexture* AllocateTexture(u32 firstPass, u32 lastPass, ngfx::GfxAccess::Flags lastState, const ngfx::GfxTextureDesc& desc, const nstring::str_t* name, ngfx::GfxAccess::Flags& initial_state);
+        IGfxBuffer*  AllocateBuffer(u32 firstPass, u32 lastPass, ngfx::GfxAccess::Flags lastState, const ngfx::GfxBufferDesc& desc, const nstring::str_t* name, ngfx::GfxAccess::Flags& initial_state);
+        void         Free(IGfxResource* resource, ngfx::GfxAccess::Flags state, bool set_state);
 
-        IGfxResource* GetAliasedPrevResource(IGfxResource* resource, u32 firstPass, GfxAccessFlags& lastUsedState);
+        IGfxResource* GetAliasedPrevResource(IGfxResource* resource, u32 firstPass, ngfx::GfxAccess::Flags& lastUsedState);
 
-        IGfxDescriptor* GetDescriptor(IGfxResource* resource, const GfxShaderResourceViewDesc& desc);
-        IGfxDescriptor* GetDescriptor(IGfxResource* resource, const GfxUnorderedAccessViewDesc& desc);
+        IGfxDescriptor* GetDescriptor(IGfxResource* resource, const ngfx::GfxShaderResourceViewDesc& desc);
+        IGfxDescriptor* GetDescriptor(IGfxResource* resource, const ngfx::GfxUnorderedAccessViewDesc& desc);
 
     private:
         void CheckHeapUsage(Heap& heap);
@@ -128,27 +123,27 @@ namespace ncore
     private:
         IGfxDevice* m_pDevice;
 
-        // eastl::vector<Heap> m_allocatedHeaps;
+        // vector_t<Heap> m_allocatedHeaps;
         Heap* m_allocatedHeaps;
         s32   m_numAllocatedHeaps;
         s32   m_maxAllocatedHeaps;
 
         struct NonOverlappingTexture
         {
-            IGfxTexture*   texture;
-            GfxAccessFlags lastUsedState;
-            u64            lastUsedFrame;
+            IGfxTexture*           texture;
+            ngfx::GfxAccess::Flags lastUsedState;
+            u64                    lastUsedFrame;
         };
-        // eastl::vector<NonOverlappingTexture> m_freeOverlappingTextures;
+        // vector_t<NonOverlappingTexture> m_freeOverlappingTextures;
         NonOverlappingTexture* m_freeOverlappingTextures;
         s32                    m_numFreeOverlappingTextures;
         s32                    m_maxFreeOverlappingTextures;
 
-        // eastl::vector<SRVDescriptor> m_allocatedSRVs;
+        // vector_t<SRVDescriptor> m_allocatedSRVs;
         SRVDescriptor* m_allocatedSRVs;
         s32            m_numAllocatedSRVs;
         s32            m_maxAllocatedSRVs;
-        // eastl::vector<UAVDescriptor> m_allocatedUAVs;
+        // vector_t<UAVDescriptor> m_allocatedUAVs;
         UAVDescriptor* m_allocatedUAVs;
         s32            m_numAllocatedUAVs;
         s32            m_maxAllocatedUAVs;

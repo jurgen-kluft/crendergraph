@@ -10,15 +10,18 @@ import (
 func GetPackage() *denv.Package {
 	// Dependencies
 	cunittestpkg := cunittest.GetPackage()
+	cgfxpkg := cdag.GetPackage()
 	cdagpkg := cdag.GetPackage()
 
 	// The main (crendergraph) package
 	mainpkg := denv.NewPackage("crendergraph")
 	mainpkg.AddPackage(cunittestpkg)
+	mainpkg.AddPackage(cgfxpkg)
 	mainpkg.AddPackage(cdagpkg)
 
 	// 'crendergraph' library
 	mainlib := denv.SetupDefaultCppLibProject("crendergraph", "github.com\\jurgen-kluft\\crendergraph")
+	mainlib.Dependencies = append(mainlib.Dependencies, cgfxpkg.GetMainLib())
 	mainlib.Dependencies = append(mainlib.Dependencies, cdagpkg.GetMainLib())
 
 	// 'crendergraph' unittest project

@@ -4,8 +4,8 @@
 
 namespace ncore
 {
-    RenderGraphPassBase::RenderGraphPassBase(const nstring::str_t const* name, RenderPassType type, DirectedAcyclicGraph& graph)
-        : DAGNode(graph)
+    RenderGraphPassBase::RenderGraphPassBase(cpstr_t name, RenderPassType type, DirectedAcyclicGraph& graph)
+//        : DAGNode(graph)
     {
         m_name = name;
         m_type = type;
@@ -14,27 +14,27 @@ namespace ncore
     // todo : https://docs.microsoft.com/en-us/windows/win32/direct3d12/executing-and-synchronizing-command-lists#accessing-resources-from-multiple-command-queues
     void RenderGraphPassBase::ResolveBarriers(const DirectedAcyclicGraph& graph)
     {
-        eastl::vector<DAGEdge*> edges;
+        vector_t<DAGEdge*> edges;
 
-        eastl::vector<DAGEdge*> resource_incoming;
-        eastl::vector<DAGEdge*> resource_outgoing;
+        vector_t<DAGEdge*> resource_incoming;
+        vector_t<DAGEdge*> resource_outgoing;
 
         graph.GetIncomingEdges(this, edges);
         for (size_t i = 0; i < edges.size(); ++i)
         {
             RenderGraphEdge* edge = (RenderGraphEdge*)edges[i];
-            RE_ASSERT(edge->GetToNode() == this->GetId());
+            ASSERT(edge->GetToNode() == this->GetId());
 
             RenderGraphResourceNode* resource_node = (RenderGraphResourceNode*)graph.GetNode(edge->GetFromNode());
             RenderGraphResource*     resource      = resource_node->GetResource();
 
             graph.GetIncomingEdges(resource_node, resource_incoming);
             graph.GetOutgoingEdges(resource_node, resource_outgoing);
-            RE_ASSERT(resource_incoming.size() <= 1);
-            RE_ASSERT(resource_outgoing.size() >= 1);
+            ASSERT(resource_incoming.size() <= 1);
+            ASSERT(resource_outgoing.size() >= 1);
 
-            GfxAccessFlags old_state = GfxAccessPresent;
-            GfxAccessFlags new_state = edge->GetUsage();
+            ngfx::GfxAccess::Flags old_state = ngfx::GfxAccess::Present;
+            ngfx::GfxAccess::Flags new_state = edge->GetUsage();
 
             // try to find previous state from last pass which used this resource
             if (resource_outgoing.size() > 1) // todo : should merge states if possible, eg. shader resource ps + shader resource non-ps -> shader resource all
@@ -53,11 +53,11 @@ namespace ncore
             }
 
             // if not found, get the state from the pass which output the resource
-            if (old_state == GfxAccessPresent)
+            if (old_state == ngfx::GfxAccess::Present)
             {
                 if (resource_incoming.empty())
                 {
-                    RE_ASSERT(resource_node->GetVersion() == 0);
+                    ASSERT(resource_node->GetVersion() == 0);
                     old_state = resource->GetInitialState();
                 }
                 else
@@ -67,7 +67,7 @@ namespace ncore
             }
 
             bool           is_aliased = false;
-            GfxAccessFlags alias_state;
+            ngfx::GfxAccess::Flags alias_state;
 
             if (resource->IsOverlapping() && resource->GetFirstPassID() == this->GetId())
             {
@@ -102,20 +102,20 @@ namespace ncore
         for (size_t i = 0; i < edges.size(); ++i)
         {
             RenderGraphEdge* edge = (RenderGraphEdge*)edges[i];
-            RE_ASSERT(edge->GetFromNode() == this->GetId());
+            ASSERT(edge->GetFromNode() == this->GetId());
 
-            GfxAccessFlags new_state = edge->GetUsage();
+            ngfx::GfxAccess::Flags new_state = edge->GetUsage();
 
-            if (new_state == GfxAccessRTV)
+            if (new_state == ngfx::GfxAccess::RTV)
             {
-                RE_ASSERT(dynamic_cast<RenderGraphEdgeColorAttchment*>(edge) != nullptr);
+                ASSERT(dynamic_cast<RenderGraphEdgeColorAttchment*>(edge) != nullptr);
 
                 RenderGraphEdgeColorAttchment* color_rt = (RenderGraphEdgeColorAttchment*)edge;
                 m_pColorRT[color_rt->GetColorIndex()]   = color_rt;
             }
-            else if (new_state == GfxAccessDSV || new_state == GfxAccessDSVReadOnly)
+            else if (new_state == ngfx::GfxAccess::DSV || new_state == ngfx::GfxAccess::DSVReadOnly)
             {
-                RE_ASSERT(dynamic_cast<RenderGraphEdgeDepthAttchment*>(edge) != nullptr);
+                ASSERT(dynamic_cast<RenderGraphEdgeDepthAttchment*>(edge) != nullptr);
 
                 m_pDepthRT = (RenderGraphEdgeDepthAttchment*)edge;
             }
@@ -126,21 +126,21 @@ namespace ncore
     {
         if (m_type == RenderPassType::AsyncCompute)
         {
-            eastl::vector<DAGEdge*> edges;
+            vector_t<DAGEdge*> edges;
 
-            eastl::vector<DAGEdge*> resource_incoming;
-            eastl::vector<DAGEdge*> resource_outgoing;
+            vector_t<DAGEdge*> resource_incoming;
+            vector_t<DAGEdge*> resource_outgoing;
 
             graph.GetIncomingEdges(this, edges);
             for (size_t i = 0; i < edges.size(); ++i)
             {
                 RenderGraphEdge* edge = (RenderGraphEdge*)edges[i];
-                RE_ASSERT(edge->GetToNode() == this->GetId());
+                ASSERT(edge->GetToNode() == this->GetId());
 
                 RenderGraphResourceNode* resource_node = (RenderGraphResourceNode*)graph.GetNode(edge->GetFromNode());
 
                 graph.GetIncomingEdges(resource_node, resource_incoming);
-                RE_ASSERT(resource_incoming.size() <= 1);
+                ASSERT(resource_incoming.size() <= 1);
 
                 if (!resource_incoming.empty())
                 {
@@ -156,7 +156,7 @@ namespace ncore
             for (size_t i = 0; i < edges.size(); ++i)
             {
                 RenderGraphEdge* edge = (RenderGraphEdge*)edges[i];
-                RE_ASSERT(edge->GetFromNode() == this->GetId());
+                ASSERT(edge->GetFromNode() == this->GetId());
 
                 RenderGraphResourceNode* resource_node = (RenderGraphResourceNode*)graph.GetNode(edge->GetToNode());
                 graph.GetOutgoingEdges(resource_node, resource_outgoing);

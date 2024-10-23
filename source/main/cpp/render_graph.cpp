@@ -10,7 +10,7 @@ namespace ncore
         m_pGraphicsQueueFence.reset(device->CreateFence("RenderGraph::m_pGraphicsQueueFence"));
     }
 
-    void RenderGraph::BeginEvent(const nstring::str_t const* name) { m_eventNames.push_back(name); }
+    void RenderGraph::BeginEvent(cpstr_t name) { m_eventNames.push_back(name); }
 
     void RenderGraph::EndEvent()
     {
@@ -61,7 +61,7 @@ namespace ncore
             }
         }
 
-        eastl::vector<DAGEdge*> edges;
+        vector_t<DAGEdge*> edges;
 
         for (size_t i = 0; i < m_resourceNodes.size(); ++i)
         {
@@ -153,9 +153,9 @@ namespace ncore
         m_outputResources.clear();
     }
 
-    void RenderGraph::Present(const RGHandle& handle, GfxAccessFlags filnal_state)
+    void RenderGraph::Present(const RGHandle& handle, ngfx::GfxAccess::Flags filnal_state)
     {
-        RE_ASSERT(handle.IsValid());
+        ASSERT(handle.IsValid());
 
         RenderGraphResource* resource = GetTexture(handle);
         resource->SetOutput(true);
@@ -177,7 +177,7 @@ namespace ncore
         }
 
         RenderGraphResource* resource = m_resources[handle.index];
-        RE_ASSERT(dynamic_cast<RGTexture*>(resource) != nullptr);
+        ASSERT(dynamic_cast<RGTexture*>(resource) != nullptr);
         return (RGTexture*)resource;
     }
 
@@ -189,13 +189,13 @@ namespace ncore
         }
 
         RenderGraphResource* resource = m_resources[handle.index];
-        RE_ASSERT(dynamic_cast<RGBuffer*>(resource) != nullptr);
+        ASSERT(dynamic_cast<RGBuffer*>(resource) != nullptr);
         return (RGBuffer*)resource;
     }
 
-    eastl::string RenderGraph::Export() { return m_graph.ExportGraphviz(); }
+    // eastl::string RenderGraph::Export() { return m_graph.ExportGraphviz(); }
 
-    RGHandle RenderGraph::Import(IGfxTexture* texture, GfxAccessFlags state)
+    RGHandle RenderGraph::Import(IGfxTexture* texture, ngfx::GfxAccess::Flags state)
     {
         auto resource = Allocate<RGTexture>(m_resourceAllocator, texture, state);
         auto node     = AllocatePOD<RenderGraphResourceNode>(m_graph, resource, 0);
@@ -210,7 +210,7 @@ namespace ncore
         return handle;
     }
 
-    RGHandle RenderGraph::Import(IGfxBuffer* buffer, GfxAccessFlags state)
+    RGHandle RenderGraph::Import(IGfxBuffer* buffer, ngfx::GfxAccess::Flags state)
     {
         auto resource = Allocate<RGBuffer>(m_resourceAllocator, buffer, state);
         auto node     = AllocatePOD<RenderGraphResourceNode>(m_graph, resource, 0);
@@ -225,9 +225,9 @@ namespace ncore
         return handle;
     }
 
-    RGHandle RenderGraph::Read(RenderGraphPassBase* pass, const RGHandle& input, GfxAccessFlags usage, u32 subresource)
+    RGHandle RenderGraph::Read(RenderGraphPassBase* pass, const RGHandle& input, ngfx::GfxAccess::Flags usage, u32 subresource)
     {
-        RE_ASSERT(input.IsValid());
+        ASSERT(input.IsValid());
         RenderGraphResourceNode* input_node = m_resourceNodes[input.node];
 
         AllocatePOD<RenderGraphEdge>(m_graph, input_node, pass, usage, subresource);
@@ -235,9 +235,9 @@ namespace ncore
         return input;
     }
 
-    RGHandle RenderGraph::Write(RenderGraphPassBase* pass, const RGHandle& input, GfxAccessFlags usage, u32 subresource)
+    RGHandle RenderGraph::Write(RenderGraphPassBase* pass, const RGHandle& input, ngfx::GfxAccess::Flags usage, u32 subresource)
     {
-        RE_ASSERT(input.IsValid());
+        ASSERT(input.IsValid());
         RenderGraphResource* resource = m_resources[input.index];
 
         RenderGraphResourceNode* input_node = m_resourceNodes[input.node];
@@ -255,12 +255,12 @@ namespace ncore
         return output;
     }
 
-    RGHandle RenderGraph::WriteColor(RenderGraphPassBase* pass, u32 color_index, const RGHandle& input, u32 subresource, GfxRenderPassLoadOp load_op, const float4& clear_color)
+    RGHandle RenderGraph::WriteColor(RenderGraphPassBase* pass, u32 color_index, const RGHandle& input, u32 subresource, ngfx::GfxRenderPass::LoadOp load_op, const float4& clear_color)
     {
-        RE_ASSERT(input.IsValid());
+        ASSERT(input.IsValid());
         RenderGraphResource* resource = m_resources[input.index];
 
-        GfxAccessFlags usage = GfxAccessRTV;
+        ngfx::GfxAccess::Flags usage = ngfx::GfxAccess::RTV;
 
         RenderGraphResourceNode* input_node = m_resourceNodes[input.node];
         AllocatePOD<RenderGraphEdgeColorAttchment>(m_graph, input_node, pass, usage, subresource, color_index, load_op, clear_color);
@@ -277,12 +277,12 @@ namespace ncore
         return output;
     }
 
-    RGHandle RenderGraph::WriteDepth(RenderGraphPassBase* pass, const RGHandle& input, u32 subresource, GfxRenderPassLoadOp depth_load_op, GfxRenderPassLoadOp stencil_load_op, float clear_depth, u32 clear_stencil)
+    RGHandle RenderGraph::WriteDepth(RenderGraphPassBase* pass, const RGHandle& input, u32 subresource, ngfx::GfxRenderPass::LoadOp depth_load_op, ngfx::GfxRenderPass::LoadOp stencil_load_op, float clear_depth, u32 clear_stencil)
     {
-        RE_ASSERT(input.IsValid());
+        ASSERT(input.IsValid());
         RenderGraphResource* resource = m_resources[input.index];
 
-        GfxAccessFlags usage = GfxAccessDSV;
+        ngfx::GfxAccess::Flags usage = ngfx::GfxAccess::DSV;
 
         RenderGraphResourceNode* input_node = m_resourceNodes[input.node];
         AllocatePOD<RenderGraphEdgeDepthAttchment>(m_graph, input_node, pass, usage, subresource, depth_load_op, stencil_load_op, clear_depth, clear_stencil);
@@ -301,16 +301,16 @@ namespace ncore
 
     RGHandle RenderGraph::ReadDepth(RenderGraphPassBase* pass, const RGHandle& input, u32 subresource)
     {
-        RE_ASSERT(input.IsValid());
+        ASSERT(input.IsValid());
         RenderGraphResource* resource = m_resources[input.index];
 
-        GfxAccessFlags usage = GfxAccessDSVReadOnly;
+        ngfx::GfxAccess::Flags usage = ngfx::GfxAccess::DSVReadOnly;
 
         RenderGraphResourceNode* input_node = m_resourceNodes[input.node];
-        AllocatePOD<RenderGraphEdgeDepthAttchment>(m_graph, input_node, pass, usage, subresource, GfxRenderPassLoadOp::Load, GfxRenderPassLoadOp::Load, 0.0f, 0);
+        AllocatePOD<RenderGraphEdgeDepthAttchment>(m_graph, input_node, pass, usage, subresource, ngfx::GfxRenderPass::LoadLoad, ngfx::GfxRenderPass::LoadLoad, 0.0f, 0);
 
         RenderGraphResourceNode* output_node = AllocatePOD<RenderGraphResourceNode>(m_graph, resource, input_node->GetVersion() + 1);
-        AllocatePOD<RenderGraphEdgeDepthAttchment>(m_graph, pass, output_node, usage, subresource, GfxRenderPassLoadOp::Load, GfxRenderPassLoadOp::Load, 0.0f, 0);
+        AllocatePOD<RenderGraphEdgeDepthAttchment>(m_graph, pass, output_node, usage, subresource, ngfx::GfxRenderPass::LoadLoad, ngfx::GfxRenderPass::LoadLoad, 0.0f, 0);
 
         RGHandle output;
         output.index = input.index;

@@ -83,7 +83,7 @@ namespace ncore
         }
     }
 
-    IGfxTexture* RenderGraphResourceAllocator::AllocateTexture(u32 firstPass, u32 lastPass, GfxAccessFlags lastState, const GfxTextureDesc& desc, const nstring::str_t const* name, GfxAccessFlags& initial_state)
+    IGfxTexture* RenderGraphResourceAllocator::AllocateTexture(u32 firstPass, u32 lastPass, ngfx::GfxAccess::Flags lastState, const ngfx::GfxTextureDesc& desc, cpstr_t name, ngfx::GfxAccess::Flags& initial_state)
     {
         LifetimeRange lifetime     = {firstPass, lastPass};
         u32           texture_size = m_pDevice->GetAllocationSize(desc);
@@ -108,8 +108,8 @@ namespace ncore
                 }
             }
 
-            GfxTextureDesc newDesc = desc;
-            newDesc.heap           = heap.heap;
+            ngfx::GfxTextureDesc newDesc = desc;
+            newDesc.heap                 = heap.heap;
 
             AliasedResource aliasedTexture;
             aliasedTexture.resource      = m_pDevice->CreateTexture(newDesc, "RGTexture " + name);
@@ -119,15 +119,15 @@ namespace ncore
 
             if (IsDepthFormat(desc.format))
             {
-                initial_state = GfxAccessDSV;
+                initial_state = ngfx::GfxAccess::DSV;
             }
-            else if (desc.usage & GfxTextureUsageRenderTarget)
+            else if (desc.usage & ngfx::GfxTextureUsage::RenderTarget)
             {
-                initial_state = GfxAccessRTV;
+                initial_state = ngfx::GfxAccess::RTV;
             }
-            else if (desc.usage & GfxTextureUsageUnorderedAccess)
+            else if (desc.usage & ngfx::GfxTextureUsage::UnorderedAccess)
             {
-                initial_state = GfxAccessMaskUAV;
+                initial_state = ngfx::GfxAccess::MaskUAV;
             }
 
             ASSERT(aliasedTexture.resource != nullptr);
@@ -138,7 +138,7 @@ namespace ncore
         return AllocateTexture(firstPass, lastPass, lastState, desc, name, initial_state);
     }
 
-    IGfxBuffer* RenderGraphResourceAllocator::AllocateBuffer(u32 firstPass, u32 lastPass, GfxAccessFlags lastState, const GfxBufferDesc& desc, const nstring::str_t const* name, GfxAccessFlags& initial_state)
+    IGfxBuffer* RenderGraphResourceAllocator::AllocateBuffer(u32 firstPass, u32 lastPass, ngfx::GfxAccess::Flags lastState, const ngfx::GfxBufferDesc& desc, const nstring::str_t const* name, ngfx::GfxAccess::Flags& initial_state)
     {
         LifetimeRange lifetime    = {firstPass, lastPass};
         u32           buffer_size = desc.size;
@@ -163,7 +163,7 @@ namespace ncore
                 }
             }
 
-            GfxBufferDesc newDesc = desc;
+            ngfx::GfxBufferDesc newDesc = desc;
             newDesc.heap          = heap.heap;
 
             AliasedResource aliasedBuffer;
@@ -172,7 +172,7 @@ namespace ncore
             aliasedBuffer.lastUsedState = lastState;
             heap.resources.push_back(aliasedBuffer);
 
-            initial_state = GfxAccessDiscard;
+            initial_state = ngfx::GfxAccess::Discard;
 
             ASSERT(aliasedBuffer.resource != nullptr);
             return (IGfxBuffer*)aliasedBuffer.resource;
@@ -184,7 +184,7 @@ namespace ncore
 
     void RenderGraphResourceAllocator::AllocateHeap(u32 size)
     {
-        GfxHeapDesc heapDesc;
+        ngfx::GfxHeapDesc heapDesc;
         heapDesc.size = RoundUpPow2(size, 64u * 1024);
 
         eastl::string heapName = fmt::format("RG Heap {:.1f} MB", heapDesc.size / (1024.0f * 1024.0f)).c_str();
@@ -194,7 +194,7 @@ namespace ncore
         m_allocatedHeaps.push_back(heap);
     }
 
-    void RenderGraphResourceAllocator::Free(IGfxResource* resource, GfxAccessFlags state, bool set_state)
+    void RenderGraphResourceAllocator::Free(IGfxResource* resource, ngfx::GfxAccess::Flags state, bool set_state)
     {
         if (resource != nullptr)
         {
@@ -223,7 +223,7 @@ namespace ncore
         }
     }
 
-    IGfxResource* RenderGraphResourceAllocator::GetAliasedPrevResource(IGfxResource* resource, u32 firstPass, GfxAccessFlags& lastUsedState)
+    IGfxResource* RenderGraphResourceAllocator::GetAliasedPrevResource(IGfxResource* resource, u32 firstPass, ngfx::GfxAccess::Flags& lastUsedState)
     {
         for (size_t i = 0; i < m_allocatedHeaps.size(); ++i)
         {
@@ -253,7 +253,7 @@ namespace ncore
 
             if (aliased_resource)
             {
-                aliased_resource->lastUsedState |= GfxAccessDiscard;
+                aliased_resource->lastUsedState |= ngfx::GfxAccess::Discard;
             }
 
             return prev_resource;
@@ -263,7 +263,7 @@ namespace ncore
         return nullptr;
     }
 
-    IGfxTexture* RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const GfxTextureDesc& desc, const nstring::str_t const* name, GfxAccessFlags& initial_state)
+    IGfxTexture* RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const ngfx::GfxTextureDesc& desc, cpstr_t name, ngfx::GfxAccess::Flags& initial_state)
     {
         for (auto iter = m_freeOverlappingTextures.begin(); iter != m_freeOverlappingTextures.end(); ++iter)
         {
@@ -277,21 +277,21 @@ namespace ncore
         }
         if (IsDepthFormat(desc.format))
         {
-            initial_state = GfxAccessDSV;
+            initial_state = ngfx::GfxAccess::DSV;
         }
-        else if (desc.usage & GfxTextureUsageRenderTarget)
+        else if (desc.usage & ngfx::GfxTextureUsage::RenderTarget)
         {
-            initial_state = GfxAccessDSVReadOnly;
+            initial_state = ngfx::GfxAccess::DSVReadOnly;
         }
-        else if (desc.usage & GfxTextureUsageUnorderedAccess)
+        else if (desc.usage & ngfx::GfxTextureUsage::UnorderedAccess)
         {
-            initial_state = GfxAccessMaskUAV;
+            initial_state = ngfx::GfxAccess::MaskUAV;
         }
 
         return m_pDevice->CreateTexture(desc, "RGTexture " + name);
     }
 
-    void RenderGraphResourceAllocator::FreeNonOverlappingTexture(IGfxTexture* texture, GfxAccessFlags state)
+    void RenderGraphResourceAllocator::FreeNonOverlappingTexture(IGfxTexture* texture, ngfx::GfxAccess::Flags state)
     {
         if (texture != nullptr)
         {
@@ -299,7 +299,7 @@ namespace ncore
         }
     }
 
-    IGfxDescriptor* RenderGraphResourceAllocator::GetDescriptor(IGfxResource* resource, const GfxShaderResourceViewDesc& desc)
+    IGfxDescriptor* RenderGraphResourceAllocator::GetDescriptor(IGfxResource* resource, const ngfx::GfxShaderResourceViewDesc& desc)
     {
         for (size_t i = 0; i < m_allocatedSRVs.size(); ++i)
         {
@@ -315,7 +315,7 @@ namespace ncore
         return srv;
     }
 
-    IGfxDescriptor* RenderGraphResourceAllocator::GetDescriptor(IGfxResource* resource, const GfxUnorderedAccessViewDesc& desc)
+    IGfxDescriptor* RenderGraphResourceAllocator::GetDescriptor(IGfxResource* resource, const ngfx::GfxUnorderedAccessViewDesc& desc)
     {
         for (size_t i = 0; i < m_allocatedUAVs.size(); ++i)
         {
