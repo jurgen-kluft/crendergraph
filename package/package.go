@@ -6,30 +6,39 @@ import (
 	cunittest "github.com/jurgen-kluft/cunittest/package"
 )
 
-// GetPackage returns the package object of 'crendergraph'
+const (
+	repo_path = "github.com\\jurgen-kluft"
+	repo_name = "crendergraph"
+)
+
 func GetPackage() *denv.Package {
-	// Dependencies
+	name := repo_name
+
+	// dependencies
 	cunittestpkg := cunittest.GetPackage()
-	cgfxpkg := cdag.GetPackage()
 	cdagpkg := cdag.GetPackage()
 
-	// The main (crendergraph) package
-	mainpkg := denv.NewPackage("crendergraph")
+	// main package
+	mainpkg := denv.NewPackage(repo_path, repo_name)
 	mainpkg.AddPackage(cunittestpkg)
-	mainpkg.AddPackage(cgfxpkg)
 	mainpkg.AddPackage(cdagpkg)
 
-	// 'crendergraph' library
-	mainlib := denv.SetupCppLibProject("crendergraph", "github.com\\jurgen-kluft\\crendergraph")
-	mainlib.AddDependencies(cgfxpkg.GetMainLib()...)
+	// main library
+	mainlib := denv.SetupCppLibProject(mainpkg, name)
 	mainlib.AddDependencies(cdagpkg.GetMainLib()...)
 
-	// 'crendergraph' unittest project
-	maintest := denv.SetupDefaultCppTestProject("crendergraph"+"_test", "github.com\\jurgen-kluft\\crendergraph")
+	// test library
+	testlib := denv.SetupCppTestLibProject(mainpkg, name)
+	testlib.AddDependencies(cdagpkg.GetTestLib()...)
+	testlib.AddDependencies(cunittestpkg.GetTestLib()...)
+
+	// unittest project
+	maintest := denv.SetupCppTestProject(mainpkg, name)
 	maintest.AddDependencies(cunittestpkg.GetMainLib()...)
-	maintest.Dependencies = append(maintest.Dependencies, mainlib)
+	maintest.AddDependency(testlib)
 
 	mainpkg.AddMainLib(mainlib)
+	mainpkg.AddTestLib(testlib)
 	mainpkg.AddUnittest(maintest)
 	return mainpkg
 }
